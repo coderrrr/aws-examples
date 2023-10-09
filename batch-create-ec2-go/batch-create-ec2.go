@@ -199,3 +199,4 @@ func queryEC2s(svc *ec2.Client) {
 		}
 	}
 }
+ 
