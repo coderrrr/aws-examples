@@ -1,0 +1,6 @@
+{
+      "IntegrationId": "hjhugo4",
+      "RequestParameters": {
+          "integration.request.header.x-integration-connection-id": "context.connectionId"
+      }
+}

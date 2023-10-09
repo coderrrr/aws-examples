@@ -1,0 +1,4 @@
+aws apigatewayv2 get-integrations --api-id <api-id>
+
+
+aws apigatewayv2 update-integration --api-id <api-id> --cli-input-json file://integration-params.json
