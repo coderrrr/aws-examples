@@ -1,9 +1,10 @@
 # Site-Access-Speed-Limit
 
+通过 Lambda edge/Dynamodb 实现网站的低频限速访问，并把 Blocked IP 加回 WAF 的 Blocked IP Set。
+
 ## 角色信任关系
 
-<pre>
-<code>
+```markdown
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -19,14 +20,11 @@
         }
     ]
 }
-</code>
-</pre>
+```
 
-<br>
 ## DynamoDB
-<br>
-<pre>
-<code>
+
+```markdown
 创建 banned_ips 表，用于存放封禁IP清单，根据需要再重复创建其他区域的全局表
 aws dynamodb create-table \
 --table-name banned_ips \
@@ -39,7 +37,7 @@ aws dynamodb create-table \
 aws dynamodb create-global-table \
     --global-table-name banned_ips \
     --replication-group RegionName=us-east-1 RegionName=region—name-n
-<br>
+
 创建 access_logs 表，用于存放必要的访问记录，根据需要再重复创建其他区域的全局表
 aws dynamodb create-table \
     --table-name access_logs \--attribute-definitions \
@@ -54,7 +52,8 @@ aws dynamodb create-global-table \
     --global-table-name access_logs \
     --replication-group RegionName=us-east-1 RegionName=region—name-n
 
-</code>
-</pre>
+```
+
 ## License
+
 This library is licensed under MIT-0 License. See the [LICENSE](LICENSE) file.
