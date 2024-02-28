@@ -2,7 +2,7 @@
 console.log("Loading event...");
 
 var aws = require("aws-sdk");
-var ddb = new aws.DynamoDB({ params: { TableName: "SESNotification" } });
+var ddb = new aws.DynamoDB({ params: { TableName: "SES-Event" } });
 
 exports.handler = function (event, context, callback) {
   console.log("Received event:", JSON.stringify(event, null, 2));
@@ -36,7 +36,7 @@ exports.handler = function (event, context, callback) {
   } else if (eventType == "Delivery") { // 送达
     var smtpResponse = SESMessage.delivery.smtpResponse;
     Object.assign(itemParams.Item, {
-      SmtpResponse: { S: smtpResponse }
+
     });
   } else if (eventType == "Failure") { // 失败
     var errorMessage = SESMessage.failure.errorMessage;
