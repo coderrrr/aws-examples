@@ -1,61 +1,71 @@
-// nodejs 14.x
+// nodejs 16.x
 console.log("Loading event...");
 
 var aws = require("aws-sdk");
-var ddb = new aws.DynamoDB({ params: { TableName: "SESNotifications" } });
+var ddb = new aws.DynamoDB({ params: { TableName: "SESNotification" } });
 
 exports.handler = function (event, context, callback) {
   console.log("Received event:", JSON.stringify(event, null, 2));
 
   var SnsPublishTime = event.Records[0].Sns.Timestamp;
-  var SnsTopicArn = event.Records[0].Sns.TopicArn;
   var SESMessage = event.Records[0].Sns.Message;
 
   SESMessage = JSON.parse(SESMessage);
 
-  var SESMessageType = SESMessage.eventType;
-  var SESMessageId = SESMessage.mail.messageId;
-  var SESSubject = SESMessage.mail.commonHeaders.subject;
-  var SESDestinationAddress = SESMessage.mail.destination.toString();
-  var LambdaReceiveTime = new Date().toString();
+  var eventType = SESMessage.eventType;
+  var messageId = SESMessage.mail.messageId;
+  var subject = SESMessage.mail.commonHeaders.subject;
+  var from = SESMessage.mail.source;   
+  var to = SESMessage.mail.destination.toString();
 
   var itemParams = {
-    Item : {
-      SESMessageId: { S: SESMessageId },
-      SnsPublishTime: { S: SnsPublishTime },
-      SESMessageType: { S: SESMessageType },
-      SESSubject: {S: SESSubject},
-      SESDestinationAddress: { S: SESDestinationAddress }
+    Item: {
+      MessageId: { S: messageId },
+      From: { S: from },
+      To: { S: to },
+      Subject: { S: subject },
+      Type: { S: eventType },
+      Time: { S: SnsPublishTime }
     }
   };
 
-  if (SESMessageType == "Bounce") {
-    var SESreportingMTA = SESMessage.bounce.reportingMTA;
-    var SESbounceSummary = JSON.stringify(SESMessage.bounce.bouncedRecipients);
-    
+  if (eventType == "Send") { // 发送
     Object.assign(itemParams.Item, {
-      SESreportingMTA: { S: SESreportingMTA },
-      SESbounceSummary: { S: SESbounceSummary },
+     
     });
-  } else if (SESMessageType == "Delivery") {
-    var SESsmtpResponse = SESMessage.delivery.smtpResponse;
-    var SESreportingMTA = SESMessage.delivery.reportingMTA;
+  } else if (eventType == "Delivery") { // 送达
+    var smtpResponse = SESMessage.delivery.smtpResponse;
+    Object.assign(itemParams.Item, {
+      SmtpResponse: { S: smtpResponse }
+    });
+  } else if (eventType == "Failure") { // 失败
+    var errorMessage = SESMessage.failure.errorMessage;
+    Object.assign(itemParams.Item, {
+      ErrorMessage: { S: errorMessage }
+    });
+  } else if (eventType == "Reject") { // 拒收
+    var reason = SESMessage.reject.reason;
+    Object.assign(itemParams.Item, {
+      RejectReason: { S: reason }
+    });
+  } else if (eventType == "Complaint") { // 投诉
+    var complaintFeedbackType = SESMessage.complaint.complaintFeedbackType;
+    Object.assign(itemParams.Item, {
+      ComplaintFeedbackType: { S: complaintFeedbackType }
+    });
+  } else if (eventType == "Bounce") { // 退订
+    var bounceSummary = JSON.stringify(SESMessage.bounce.bouncedRecipients);
+    Object.assign(itemParams.Item, {
+      BounceSummary: { S: bounceSummary },
+    });
+  } else if (eventType == "Open") { // 打开邮件
+    Object.assign(itemParams.Item, {
 
-    Object.assign(itemParams.Item, {
-      SESsmtpResponse: { S: SESsmtpResponse },
-      SESreportingMTA: { S: SESreportingMTA }
     });
-  } else if (SESMessageType == "Complaint") {
-    var SESComplaintFeedbackType = SESMessage.complaint.complaintFeedbackType;
-    var SESFeedbackId = SESMessage.complaint.feedbackId;
+  } else if (eventType == "Click") { // 点击链接
+    var link = SESMessage.click.link;
     Object.assign(itemParams.Item, {
-      SESComplaintFeedbackType: { S: SESComplaintFeedbackType },
-      SESFeedbackId: { S: SESFeedbackId }
-    });
-  } else if (SESMessageType == "Click") {
-    var SESlink = SESMessage.click.link;
-    Object.assign(itemParams.Item, {
-      SESLink: { S: SESlink },
+      OpenLink: { S: link }
     });
   }
 
@@ -67,7 +77,7 @@ exports.handler = function (event, context, callback) {
       callback(err)
     } else {
       console.log(data);
-      callback(null,'')
+      callback(null, '')
     }
   });
 };
