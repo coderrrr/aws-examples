@@ -1,6 +1,4 @@
 // nodejs 16.x
-console.log("Loading event...");
-
 var aws = require("aws-sdk");
 var ddb = new aws.DynamoDB({ params: { TableName: "SES-Event" } });
 
@@ -8,6 +6,21 @@ exports.handler = function (event, context, callback) {
   console.log("Received event:", JSON.stringify(event, null, 2));
 
   var SnsPublishTime = event.Records[0].Sns.Timestamp;
+
+  var time = new Date(SnsPublishTime).toLocaleString('en-US', {
+    timeZone: 'Asia/Shanghai',
+    hour12: false,
+  });
+  
+  const shanghaiTime = new Date(time);
+  
+  var formattedTime = shanghaiTime.getFullYear() + "-"
+        + (shanghaiTime.getMonth() + 1 < 10 ? '0' + (shanghaiTime.getMonth() + 1) : (shanghaiTime.getMonth() + 1)) + "-"
+        + (shanghaiTime.getDate() < 10 ? '0' + shanghaiTime.getDate() : shanghaiTime.getDate()) + " "
+        + (shanghaiTime.getHours() < 10 ? '0' + shanghaiTime.getHours() : shanghaiTime.getHours()) + ":"
+        + (shanghaiTime.getMinutes() < 10 ? '0' + shanghaiTime.getMinutes() : shanghaiTime.getMinutes()) + ":"
+        + (shanghaiTime.getSeconds() < 10 ? '0' + shanghaiTime.getSeconds() : shanghaiTime.getSeconds());
+  
   var SESMessage = event.Records[0].Sns.Message;
 
   SESMessage = JSON.parse(SESMessage);
@@ -25,7 +38,7 @@ exports.handler = function (event, context, callback) {
       To: { S: to },
       Subject: { S: subject },
       Type: { S: eventType },
-      Time: { S: SnsPublishTime }
+      Time: { S: formattedTime }
     }
   };
 
@@ -69,7 +82,7 @@ exports.handler = function (event, context, callback) {
     });
   }
 
-  console.log(itemParams);
+  // console.log(itemParams);
 
   // 写入数据到 DynamoDB
   ddb.putItem(itemParams, function (err, data) {
